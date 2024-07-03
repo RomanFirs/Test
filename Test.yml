@@ -1,0 +1,45 @@
+name: Deploy Dockerized Nginx Application
+hosts: remote_server
+become: yes
+
+tasks:
+
+name: Install Docker and Docker Compose
+apt:
+  name: docker.io
+  state: present
+
+name: Install Docker Compose
+apt:
+  name: docker-compose
+  state: present
+
+name: Copy Docker Compose file
+copy:
+  content: |
+version: '3'
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./app:/app
+networks:
+  - frontend
+  dest: /home/ubuntu/docker-compose.yml
+
+name: Run Docker Compose
+command: docker-compose up -d
+
+name: Wait for Nginx to start
+wait_for:
+  port: 80
+  delay: 5
+
+name: Test Nginx
+uri:
+  url: http://localhost/
+  status_code: 200
+  validate_certs: no
